@@ -168,11 +168,13 @@ services:
       - spark-master
     environment:
       SPARK_MODE: worker
-      SPARK_WORKER_CORES: 2
-      SPARK_WORKER_MEMORY: 1g
+      SPARK_WORKER_CORES: 8
+      SPARK_WORKER_MEMORY: 8g
       SPARK_MASTER_URL: spark://spark-master:7077
     networks:
-      - confluent
+      - confluent  
+    volumes:
+      - ./log4j.properties:/opt/bitnami/spark/conf/log4j.propertiesd    
 
   cassandra_db:
     image: cassandra:latest
