@@ -2,8 +2,8 @@ import logging
 import uuid
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col
-from pyspark.sql.types import StructType, StructField, StringType, FloatType, TimestampType
+from pyspark.sql.functions import from_json, col, expr
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType, FloatType
 
 def create_keyspace(session):
     try:
@@ -99,22 +99,29 @@ def create_cassandra_connection():
         return None
 
 def create_selection_df_from_kafka(spark_df):
+    # Define schema for parsing Kafka messages
     schema = StructType([
-        StructField("ticker", StringType(), False),
-        StructField("bid", FloatType(), False),
-        StructField("ask", FloatType(), False),
-        StructField("open", FloatType(), False),
-        StructField("low", FloatType(), False),
-        StructField("high", FloatType(), False),
-        StructField("changes", FloatType(), False),
-        StructField("date", TimestampType(), False) 
+        StructField("ticker", StringType(), True),
+        StructField("bid", FloatType(), True),
+        StructField("ask", FloatType(), True),
+        StructField("open_price", FloatType(), True),
+        StructField("low", FloatType(), True),
+        StructField("high", FloatType(), True),
+        StructField("changes", FloatType(), True),
+        StructField("date", TimestampType(), True),
+        # Use StringType for UUID, to be converted in Cassandra
+        StructField("id", StringType(), False)
     ])
 
     try:
         # Cast Kafka value to string and apply schema
         sel = spark_df.selectExpr("CAST(value AS STRING)") \
-            .select(from_json(col('value'), schema).alias('data')).select("data.*")
-        
+            .select(from_json(col('value'), schema).alias('data')) \
+            .select("data.*")
+
+        # Add the UUID column as the primary key
+        sel = sel.withColumn("id", expr("uuid()"))
+
         logging.info("Schema successfully applied to Kafka stream.")
         return sel
     except Exception as e:

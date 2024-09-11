@@ -171,6 +171,8 @@ services:
       SPARK_WORKER_CORES: 8
       SPARK_WORKER_MEMORY: 8g
       SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_RPC_MESSAGE_MAXSIZE: 512
+  
     networks:
       - confluent  
     volumes:
